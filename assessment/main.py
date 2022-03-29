@@ -20,8 +20,6 @@ class XharkTankAssessment(TestCase):
         self.HEADERS = {"Content-Type": "application/json"} # "X-Firebase-Auth": "INTERNAL_IMPERSONATE_USER_" + str(user),
         self.localhost = 'http://localhost:8081/'
 
-        self.FIRST_PITCH_ID = ''
-
         self.POSITIVE_STATUS_CODES = [200, 201, 202, 203]
         self.NEGATIVE_STATUS_CODES = [400, 401, 402, 403, 404, 405, 409]
 
@@ -59,102 +57,117 @@ class XharkTankAssessment(TestCase):
             logging.exception(str(e))
             return response
         return data
+
+    def checkKey(self,dict,key):
+        if key in dict:
+            return True
+        else:
+            return False
     ### Helper functions end here
 
-
     @pytest.mark.run(order=1)
-    def test_0_get_on_empty_db_test(self):
-        """When run with empty database, get calls should return success, and response should be an empty list """
-        # print("test_get_on_empty_db_test")
-        endpoint = 'pitch/'
-        response_with_slash = self.get_api(endpoint)
-        self.assertEqual(response_with_slash.status_code, 200)
-        # print(self.decode_and_load_json(response_with_slash))
-        response_length = len(self.decode_and_load_json(response_with_slash))
-        # print("length of the response received = {}".format(response_length))
+    def test_1_get_all_pitches_when_empty_db(self):
+        """When run with empty database, get all pitches should return success, and response should be an empty list """
+        endpoint = 'pitches'
+        response = self.get_api(endpoint)
+        self.assertEqual(response.status_code, 200)
+        response_length = len(self.decode_and_load_json(response))
         self.assertEqual(response_length, 0)
 
-    # First Post
     @pytest.mark.run(order=2)
-    def test_1_post_first_pitch(self):
-        """Post first Pitch and verify that it returns id in the response"""
-        endpoint = 'pitch/'
+    def test_2_post_pitch(self):
+        """Post a Pitch and verify that it returns id in the response"""
+        endpoint = 'pitches'
         body = {
-            "pitcherName": "Yakshit",
-"pitchTitle": "Crio.Do - A Project Building Platform",
-"pitchDetails" : "Learn Like You Would At India's Top Tech Companies. Work-experience based learning programs for developers Build professional projects like the top 1% developers. Master the latest full stack and backend tech with real work-ex. Crack developer jobs at the best tech companies.",
-"expectedAmount" : 1000000000,
-"equity": 25
+            "entrepreneur": "Yakshit#1",
+            "pitchTitle": "Sample Title #1",
+            "pitchIdea" : "Sample Idea #1",
+            "askAmount" : 1000000000,
+            "equity": 25
         }
         response = self.post_api(endpoint, json.dumps(body))
-        # print("verify that response status code is one of " + str(self.POSITIVE_STATUS_CODES))
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
-        print('First post data: ', data)
-        self.FIRST_PITCH_ID = data['id']
-        # print('Assigned successfully' + str(self.FIRST_POST_ID))
+        self.assertTrue(self.checkKey(data,"id"))
+
 
     @pytest.mark.run(order=3)
-    def test_2_get_single_pitch(self):  # Score 6
-        """Post a new Pitch capture its Id, and verify its GET /pitch/{id} returns correct PITCH"""
-        endpoint = 'pitch/'
+    def test_3_get_single_pitch(self):
+        """Given a pitch id verify that it returns that pitch"""
+        endpoint = 'pitches'
         body = {
-            "pitcherName": "Yakshit",
-"pitchTitle": "Crio.Do - A Project Building Platform",
-"pitchDetails" : "Learn Like You Would At India's Top Tech Companies. Work-experience based learning programs for developers Build professional projects like the top 1% developers. Master the latest full stack and backend tech with real work-ex. Crack developer jobs at the best tech companies.",
-"expectedAmount" : 1000000000,
-"equity": 25
+            "entrepreneur": "Yakshit#2",
+            "pitchTitle": "Sample Title #2",
+            "pitchIdea" : "Sample Idea #2",
+            "askAmount" : 1000000000,
+            "equity": 25
         }
 
         response = self.post_api(endpoint, json.dumps(body))
-        # print("verify that response status code is one of " + str(self.POSITIVE_STATUS_CODES))
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
-        # print('First post data: ', data)
-
-        # inserted, now get it using get api.
-        endpoint = 'pitch/{}'.format(data["id"])
+        self.assertTrue(self.checkKey(data,"id"))
+        endpoint = 'pitches/{}'.format(data["id"])
         response = self.get_api(endpoint)
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
-        print('get single: ', data)
-        self.assertEqual(data['pitcherName'], "Yakshit")
-        self.assertEqual(data['pitchTitle'], "Crio.Do - A Project Building Platform")
-        self.assertEqual(data['pitchDetails'], "Learn Like You Would At India's Top Tech Companies. Work-experience based learning programs for developers Build professional projects like the top 1% developers. Master the latest full stack and backend tech with real work-ex. Crack developer jobs at the best tech companies.")
-        self.assertEqual(data['expectedAmount'], 1000000000)
-        self.assertEqual(data['equity'], 25)
-
+        self.assertTrue(self.checkKey(data,"id"))
+        self.assertTrue(self.checkKey(data,"entrepreneur"))
+        self.assertTrue(self.checkKey(data,"pitchIdea"))
+        self.assertTrue(self.checkKey(data,"askAmount"))
+        self.assertTrue(self.checkKey(data,"equity"))
+        self.assertTrue(self.checkKey(data,"offers"))
+        body["id"] = data["id"]
+        body["offers"] = []
+        self.assertDictEqual(body,data)
 
 
     @pytest.mark.run(order=4)
-    def test_3_get_single_pitch_non_existent_test(self):
-        """Try to access PITCH with some random id, and verify that it returns 404"""
-        endpoint = 'pitch/0909'
-        response = self.get_api(endpoint)
-        # print('Status code for non existent meme: ', response.status_code)
-        self.assertIn(response.status_code, self.NEGATIVE_STATUS_CODES)
-
-    @pytest.mark.run(order=5)
-    def test_4_post_duplicate_pitch(self):
-        """Verify that posting duplicate pitch return 409"""
-        endpoint = 'pitch/'
+    def test_4_get_all_pitches_when_pitches_present_in_db(self):
+        """Get all pitches and verify that it returns all pitches"""
+        endpoint = 'pitches'
         body = {
-            "pitcherName": "Yakshit",
-"pitchTitle": "Crio.Do - A Project Building Platform",
-"pitchDetails" : "Learn Like You Would At India’s Top Tech Companies. Work-experience based learning programs for developers Build professional projects like the top 1% developers. Master the latest full stack and backend tech with real work-ex. Crack developer jobs at the best tech companies.",
-"expectedAmount" : 1000000000,
-"equity": 25
+            "entrepreneur": "Yakshit#3",
+            "pitchTitle": "Sample Title #3",
+            "pitchIdea" : "Sample Idea #3",
+            "askAmount" : 1000000000,
+            "equity": 25
         }
         response = self.post_api(endpoint, json.dumps(body))
-        self.assertIn(response.status_code, self.NEGATIVE_STATUS_CODES)
+        self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
+        response = self.get_api(endpoint)
+        self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
+        response_length = len(self.decode_and_load_json(response))
+        self.assertEqual(response_length, 3)
 
-    @pytest.mark.run(order=6)
-    def test_5_post_empty_pitch(self):
-        """Verify that API doesnt accept empty data in POST call"""
-        endpoint = 'pitch/'
-        body = {}
+
+    @pytest.mark.run(order=5)
+    def test_5_post_offer(self):
+        """Post an Offer and verify that it returns id in the response"""
+        endpoint = 'pitches'
+        body = {
+            "entrepreneur": "Yakshit#4",
+            "pitchTitle": "Sample Title #4",
+            "pitchIdea" : "Sample Idea #4",
+            "askAmount" : 1000000000,
+            "equity": 25
+        }
+
         response = self.post_api(endpoint, json.dumps(body))
-        self.assertIn(response.status_code, self.NEGATIVE_STATUS_CODES)
+        self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
+        data = self.decode_and_load_json(response)
+        self.assertTrue(self.checkKey(data,"id"))
+        endpoint = 'pitches/{}/makeOffer'.format(data["id"])
+        body = {
+            "investor": "Anupam Mittal",
+            "amount" : 1000000000,
+            "equity": 25,
+            "comment":"A new concept in the ed-tech market. I can relate with the importance of the Learn By Doing philosophy. Keep up the Good Work! Definitely interested to work with you to scale the vision of the company!"
+        }
+        response = self.post_api(endpoint, json.dumps(body))
+        self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
+        data = self.decode_and_load_json(response)
+        self.assertTrue(self.checkKey(data,"id"))
 
 
 
