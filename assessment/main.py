@@ -65,7 +65,7 @@ class XharkTankAssessment(TestCase):
             return False
     ### Helper functions end here
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.order(1)
     def test_1_get_all_pitches_when_empty_db(self):
         """When run with empty database, get all pitches should return success, and response should be an empty list """
         endpoint = 'pitches'
@@ -74,7 +74,7 @@ class XharkTankAssessment(TestCase):
         response_length = len(self.decode_and_load_json(response))
         self.assertEqual(response_length, 0)
 
-    @pytest.mark.run(order=2)
+    @pytest.mark.order(2)
     def test_2_post_pitch(self):
         """Post a Pitch and verify that it returns id in the response"""
         endpoint = 'pitches'
@@ -83,15 +83,16 @@ class XharkTankAssessment(TestCase):
             "pitchTitle": "Sample Title #1",
             "pitchIdea" : "Sample Idea #1",
             "askAmount" : 1000000000,
-            "equity": 25
+            "equity": 25.3
         }
         response = self.post_api(endpoint, json.dumps(body))
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
+        self.assertEqual(len(data))
 
 
-    @pytest.mark.run(order=3)
+    @pytest.mark.order(3)
     def test_3_get_single_pitch(self):
         """Given a pitch id verify that it returns that pitch"""
         endpoint = 'pitches'
@@ -100,13 +101,14 @@ class XharkTankAssessment(TestCase):
             "pitchTitle": "Sample Title #2",
             "pitchIdea" : "Sample Idea #2",
             "askAmount" : 1000000000,
-            "equity": 25
+            "equity": 25.3
         }
 
         response = self.post_api(endpoint, json.dumps(body))
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
+        self.assertEqual(len(data))
         endpoint = 'pitches/{}'.format(data["id"])
         response = self.get_api(endpoint)
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
@@ -114,6 +116,7 @@ class XharkTankAssessment(TestCase):
         self.assertTrue(self.checkKey(data,"id"))
         self.assertTrue(self.checkKey(data,"entrepreneur"))
         self.assertTrue(self.checkKey(data,"pitchIdea"))
+        self.assertTrue(self.checkKey(data,"pitchTitle"))
         self.assertTrue(self.checkKey(data,"askAmount"))
         self.assertTrue(self.checkKey(data,"equity"))
         self.assertTrue(self.checkKey(data,"offers"))
@@ -122,7 +125,7 @@ class XharkTankAssessment(TestCase):
         self.assertDictEqual(body,data)
 
 
-    @pytest.mark.run(order=4)
+    @pytest.mark.order(4)
     def test_4_get_all_pitches_when_pitches_present_in_db(self):
         """Get all pitches and verify that it returns all pitches"""
         endpoint = 'pitches'
@@ -131,7 +134,7 @@ class XharkTankAssessment(TestCase):
             "pitchTitle": "Sample Title #3",
             "pitchIdea" : "Sample Idea #3",
             "askAmount" : 1000000000,
-            "equity": 25
+            "equity": 25.3
         }
         response = self.post_api(endpoint, json.dumps(body))
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
@@ -141,7 +144,7 @@ class XharkTankAssessment(TestCase):
         self.assertEqual(response_length, 3)
 
 
-    @pytest.mark.run(order=5)
+    @pytest.mark.order(5)
     def test_5_post_offer(self):
         """Post an Offer and verify that it returns id in the response"""
         endpoint = 'pitches'
@@ -150,7 +153,7 @@ class XharkTankAssessment(TestCase):
             "pitchTitle": "Sample Title #4",
             "pitchIdea" : "Sample Idea #4",
             "askAmount" : 1000000000,
-            "equity": 25
+            "equity": 25.3
         }
 
         response = self.post_api(endpoint, json.dumps(body))
@@ -161,7 +164,7 @@ class XharkTankAssessment(TestCase):
         body = {
             "investor": "Anupam Mittal",
             "amount" : 1000000000,
-            "equity": 25,
+            "equity": 25.3,
             "comment":"A new concept in the ed-tech market. I can relate with the importance of the Learn By Doing philosophy. Keep up the Good Work! Definitely interested to work with you to scale the vision of the company!"
         }
         response = self.post_api(endpoint, json.dumps(body))
