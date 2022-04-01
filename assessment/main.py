@@ -3,23 +3,44 @@ from unittest import TestCase
 
 import pytest
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 import json
 import logging
 
 ## Global variables and functions
 from pytest import fail
 
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = 5
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
 
 class XharkTankAssessment(TestCase):
 
     HEADERS = None
     maxDiff = None
+    http = None
 
     def __init__(self, *args, **kwargs):
 
         unittest.TestCase.__init__(self, *args, **kwargs)
         self.HEADERS = {"Content-Type": "application/json"} # "X-Firebase-Auth": "INTERNAL_IMPERSONATE_USER_" + str(user),
         self.localhost = 'http://localhost:8081/'
+        self.http = requests.Session()
+        retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+        adapter = TimeoutHTTPAdapter(max_retries=retries)
+        self.http.mount("http://", adapter)
 
         self.POSITIVE_STATUS_CODES = [200, 201, 202, 203]
         self.NEGATIVE_STATUS_CODES = [400, 401, 402, 403, 404, 405, 409]
@@ -27,13 +48,13 @@ class XharkTankAssessment(TestCase):
     ### Helper functions
     def get_api(self, endpoint):
       
-        response = requests.get(self.localhost + endpoint, headers=self.HEADERS)
+        response = self.http.get(self.localhost + endpoint, headers=self.HEADERS)
         self.print_curl_request_and_response(response)
         return response
 
     def post_api(self, endpoint, body):
        
-        response = requests.post(self.localhost + endpoint, headers=self.HEADERS, data=body)
+        response = self.http.post(self.localhost + endpoint, headers=self.HEADERS, data=body)
         self.print_curl_request_and_response(response)
         return response
 
@@ -45,7 +66,7 @@ class XharkTankAssessment(TestCase):
 
     def patch_api(self, endpoint, body):
        
-        response = requests.patch(self.localhost + endpoint, headers = self.HEADERS, data = body)
+        response = self.http.patch(self.localhost + endpoint, headers = self.HEADERS, data = body)
         self.print_curl_request_and_response(response)
         return response
 
