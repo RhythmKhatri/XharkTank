@@ -1,15 +1,12 @@
+import time
 import unittest
 from unittest import TestCase
 
 import pytest
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 import json
 import logging
-
-## Global variables and functions
-from pytest import fail
+import socket
 
 
 class XharkTankAssessment(TestCase):
@@ -25,23 +22,16 @@ class XharkTankAssessment(TestCase):
         self.POSITIVE_STATUS_CODES = [200, 201, 202, 203]
         self.NEGATIVE_STATUS_CODES = [400, 401, 402, 403, 404, 405, 409]
 
-    def requests_retry_session(retries=3,backoff_factor=1,status_forcelist=(500, 502,503,504)):
-        session = requests.Session()
-        retry = Retry(total=retries,read=retries,connect=retries,backoff_factor=backoff_factor,status_forcelist=status_forcelist)
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        return session
-
     ### Helper functions
     def get_api(self, endpoint):
       
-        response = self.requests_retry_session().get(self.localhost + endpoint, headers=self.HEADERS)
+        response = requests.get(self.localhost + endpoint, headers=self.HEADERS,timeout=10)
         self.print_curl_request_and_response(response)
         return response
 
     def post_api(self, endpoint, body):
        
-        response = self.requests_retry_session().post(self.localhost + endpoint, headers=self.HEADERS, data=body)
+        response = requests.post(self.localhost + endpoint, headers=self.HEADERS,timeout=10, data=body)
         self.print_curl_request_and_response(response)
         return response
 
@@ -53,7 +43,7 @@ class XharkTankAssessment(TestCase):
 
     def patch_api(self, endpoint, body):
        
-        response = self.http.patch(self.localhost + endpoint, headers = self.HEADERS, data = body)
+        response = self.http.patch(self.localhost + endpoint, headers = self.HEADERS,data = body)
         self.print_curl_request_and_response(response)
         return response
 
@@ -72,7 +62,34 @@ class XharkTankAssessment(TestCase):
             return True
         else:
             return False
+
+    def check_server(self,address, port):
+    # Create a TCP socket
+        s = socket.socket()
+    # print("Attempting to connect to {} on port {}".format(address, port))
+        try:
+            s.connect((address, port))
+            # print( "Connected to %s on port %s" % (address, port))
+            return True
+        except socket.error:
+            # print ("Connection to %s on port %s failed" % (address, port))
+            return False
+        finally:
+            s.close()
+
     ### Helper functions end here
+
+    @pytest.fixture(autouse=True)
+    def slow_down_tests(self):
+        yield
+        time.sleep(5)
+
+    @pytest.mark.order(0)
+    def test_0_check_server_run_port_8081(self):
+        """Check if server is running on port 8081"""
+        status = self.check_server("localhost",8081)
+        self.assertTrue(status)
+            
 
     @pytest.mark.order(1)
     def test_1_get_all_pitches_when_empty_db(self):
@@ -98,7 +115,7 @@ class XharkTankAssessment(TestCase):
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
-        #self.assertEqual(1,len(data))
+        self.assertEqual(1,len(data))
 
 
     @pytest.mark.order(3)
@@ -117,7 +134,7 @@ class XharkTankAssessment(TestCase):
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
-        #self.assertEqual(1,len(data))
+        self.assertEqual(1,len(data))
         endpoint = 'pitches/{}'.format(data["id"])
         response = self.get_api(endpoint)
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
@@ -132,6 +149,7 @@ class XharkTankAssessment(TestCase):
         body["id"] = data["id"]
         body["offers"] = []
         self.assertDictEqual(body,data)
+        self.assertEqual(7,len(data))
 
 
     @pytest.mark.order(4)
@@ -169,6 +187,7 @@ class XharkTankAssessment(TestCase):
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
+        self.assertEqual(1,len(data))
         endpoint = 'pitches/{}/makeOffer'.format(data["id"])
         body = {
             "investor": "Anupam Mittal",
@@ -180,10 +199,9 @@ class XharkTankAssessment(TestCase):
         self.assertIn(response.status_code, self.POSITIVE_STATUS_CODES)
         data = self.decode_and_load_json(response)
         self.assertTrue(self.checkKey(data,"id"))
+        self.assertEqual(1,len(data))
 
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
