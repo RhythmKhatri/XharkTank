@@ -86,14 +86,14 @@ class XharkTankAssessment(TestCase):
 
     @pytest.mark.order(0)
     def test_0_check_server_run_port_8081(self):
-        """Check if server is running on port 8081"""
+        """Verify if backend is running at port 8081"""
         status = self.check_server("localhost",8081)
         self.assertTrue(status)
             
 
     @pytest.mark.order(1)
     def test_1_get_all_pitches_when_empty_db(self):
-        """When run with empty database, get all pitches should return success, and response should be an empty list """
+        """Get All Pitches and Verify that response is an empty list and HTTP Status is OK"""
         endpoint = 'pitches'
         response = self.get_api(endpoint)
         self.assertEqual(response.status_code, 200)
@@ -102,7 +102,7 @@ class XharkTankAssessment(TestCase):
 
     @pytest.mark.order(2)
     def test_2_post_pitch(self):
-        """Post a Pitch and verify that it returns id in the response"""
+        """Post a new Pitch and Verify that response is as per the API Spec and HTTP Status is Created """
         endpoint = 'pitches'
         body = {
             "entrepreneur": "Yakshit#1",
@@ -120,7 +120,7 @@ class XharkTankAssessment(TestCase):
 
     @pytest.mark.order(3)
     def test_3_get_single_pitch(self):
-        """Given a pitch id verify that it returns that pitch"""
+        """Get a single Pitch provided id and Verify that response is as per the API Spec and HTTP Status is OK"""
         endpoint = 'pitches'
         body = {
             "entrepreneur": "Yakshit#2",
@@ -154,7 +154,7 @@ class XharkTankAssessment(TestCase):
 
     @pytest.mark.order(4)
     def test_4_get_all_pitches_when_pitches_present_in_db(self):
-        """Get all pitches and verify that it returns all pitches"""
+        """Get all Pitches and Verify that response is as per the API Spec and HTTP Status is OK"""
         endpoint = 'pitches'
         body = {
             "entrepreneur": "Yakshit#3",
@@ -173,7 +173,7 @@ class XharkTankAssessment(TestCase):
 
     @pytest.mark.order(5)
     def test_5_post_offer(self):
-        """Post an Offer and verify that it returns id in the response"""
+        """Post a new Offer provided pitch Id and Verify that response is as per the API Spec and HTTP Status is Created"""
         endpoint = 'pitches'
         body = {
             "entrepreneur": "Yakshit#4",
