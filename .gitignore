@@ -1,4 +1,3 @@
-
 # Created by https://www.toptal.com/developers/gitignore/api/python,java,node,macos,linux,windows,intellij,eclipse,visualstudiocode,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,java,node,macos,linux,windows,intellij,eclipse,visualstudiocode,pycharm
 
@@ -20,6 +19,7 @@ local.properties
 
 # Locally stored "Eclipse launch configurations"
 *.launch
+package-lock.json
 
 # PyDev specific (Python IDE for Eclipse)
 *.pydevproject
